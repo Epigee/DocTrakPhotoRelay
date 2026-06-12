@@ -162,17 +162,20 @@ function createEnvelope(context: UploadUrlContext, image: ProcessedImage): Power
 }
 
 function createDocTrakTestEnvelope(context: UploadUrlContext): PowerFlexEnvelope<DocTrakMessage> {
+  const formGuid = typeof crypto.randomUUID === 'function' ? crypto.randomUUID() : `form-${Date.now()}`
+
   return {
     APP: context.app,
     UserID: context.userId,
     Configuration: context.configuration,
     Site: context.site,
     Context: context.context,
-    FormGUID: context.formGuid,
+    FormGUID: formGuid,
     MongooseURL: context.mongooseUrl ?? '',
     TO: createRoutingTarget(context),
     MessageType: 'DocTrakMessage',
     Message: {
+      FormGUID: formGuid,
       Module: 'Item',
       Value1: '30Q',
     },
