@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { processImageFile, type ProcessedImage } from '../services/imageProcessor'
 import { sendEnvelopeWithAlign } from '../services/wsClient'
 import type { DocTrakImageMessage, PowerFlexEnvelope } from '../types/contracts'
@@ -7,6 +7,8 @@ import { parseUploadUrlContext, type UploadUrlContext } from '../utils/urlContex
 type ScreenState = 'loading' | 'ready' | 'preview' | 'sending' | 'success' | 'error'
 
 export function UploadPage() {
+  const uploadFileInputRef = useRef<HTMLInputElement | null>(null)
+  const cameraInputRef = useRef<HTMLInputElement | null>(null)
   const [screen, setScreen] = useState<ScreenState>('loading')
   const [context, setContext] = useState<UploadUrlContext | null>(null)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
@@ -16,7 +18,14 @@ export function UploadPage() {
 
   useEffect(() => {
     try {
+      const params = Object.fromEntries(new URLSearchParams(window.location.search).entries())
+      console.info('[UploadPage] Arrival URL context parameters', {
+        href: window.location.href,
+        params,
+      })
+
       const parsed = parseUploadUrlContext()
+      console.info('[UploadPage] Parsed upload context', parsed)
       setContext(parsed)
       setScreen('ready')
     } catch (error) {
@@ -51,6 +60,7 @@ export function UploadPage() {
 
     try {
       const envelope = createEnvelope(context, selectedImage)
+      console.info('[UploadPage] Envelope to send (image payload redacted)', redactImagePayload(envelope))
       const ack = await sendEnvelopeWithAlign(context, envelope)
       const detail = ack?.Message?.detail
       setSuccessMessage(detail ?? 'Image sent successfully.')
@@ -74,23 +84,37 @@ export function UploadPage() {
         {previewDataUrl && <img className="preview" src={previewDataUrl} alt="Upload preview" />}
 
         <div className="actions">
-          <label>
-            Choose Photo
-            <input
-              type="file"
-              accept="image/*"
-              capture="environment"
-              hidden
-              onChange={(event) => {
-                void onFileSelected(event.target.files?.[0] ?? null)
-                event.currentTarget.value = ''
-              }}
-            />
-          </label>
+          <button type="button" onClick={() => uploadFileInputRef.current?.click()} disabled={screen === 'sending'}>
+            Upload File
+          </button>
+          <button type="button" onClick={() => cameraInputRef.current?.click()} disabled={screen === 'sending'}>
+            Take Picture
+          </button>
           <button className="primary" onClick={() => void onSend()} disabled={!selectedImage || screen === 'sending'}>
             Send
           </button>
         </div>
+        <input
+          ref={uploadFileInputRef}
+          type="file"
+          accept="image/*"
+          hidden
+          onChange={(event) => {
+            void onFileSelected(event.target.files?.[0] ?? null)
+            event.currentTarget.value = ''
+          }}
+        />
+        <input
+          ref={cameraInputRef}
+          type="file"
+          accept="image/*"
+          capture="environment"
+          hidden
+          onChange={(event) => {
+            void onFileSelected(event.target.files?.[0] ?? null)
+            event.currentTarget.value = ''
+          }}
+        />
       </section>
     </main>
   )
@@ -129,6 +153,19 @@ function createEnvelope(context: UploadUrlContext, image: ProcessedImage): Power
       imageBytes: image.bytes,
       imageWidth: image.width,
       imageHeight: image.height,
+    },
+  }
+}
+
+function redactImagePayload(
+  envelope: PowerFlexEnvelope<DocTrakImageMessage>,
+): PowerFlexEnvelope<Omit<DocTrakImageMessage, 'imageBase64'> & { imageBase64: string; imageBase64Length: number }> {
+  return {
+    ...envelope,
+    Message: {
+      ...envelope.Message,
+      imageBase64Length: envelope.Message.imageBase64.length,
+      imageBase64: '[REDACTED]',
     },
   }
 }
