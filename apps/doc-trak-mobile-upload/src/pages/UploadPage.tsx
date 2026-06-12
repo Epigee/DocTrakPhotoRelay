@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { processImageFile, type ProcessedImage } from '../services/imageProcessor'
 import { sendEnvelopeWithAlign } from '../services/wsClient'
-import type { DocTrakImageMessage, PowerFlexEnvelope } from '../types/contracts'
+import type { DocTrakImageMessage, DocTrakMessage, PowerFlexEnvelope } from '../types/contracts'
 import { parseUploadUrlContext, type UploadUrlContext } from '../utils/urlContext'
 
 type ScreenState = 'loading' | 'ready' | 'preview' | 'sending' | 'success' | 'error'
@@ -70,6 +70,27 @@ export function UploadPage() {
     }
   }
 
+  const onTest = async () => {
+    if (!context) {
+      return
+    }
+    setErrorMessage(null)
+    setSuccessMessage(null)
+    setScreen('sending')
+
+    try {
+      const envelope = createDocTrakTestEnvelope(context)
+      console.info('[UploadPage] Test envelope to send', envelope)
+      const ack = await sendEnvelopeWithAlign(context, envelope)
+      const detail = ack?.Message?.detail
+      setSuccessMessage(detail ?? 'Test message sent successfully.')
+      setScreen('success')
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : 'Failed to send test message.')
+      setScreen('error')
+    }
+  }
+
   return (
     <main className="upload-page">
       <section className="upload-card">
@@ -94,6 +115,9 @@ export function UploadPage() {
           <button className="primary" onClick={() => void onSend()} disabled={!selectedImage || screen === 'sending'}>
             Send
           </button>
+          <button type="button" onClick={() => void onTest()} disabled={screen === 'sending'}>
+            Test
+          </button>
         </div>
         <input
           ref={uploadFileInputRef}
@@ -112,17 +136,7 @@ export function UploadPage() {
 
 function createEnvelope(context: UploadUrlContext, image: ProcessedImage): PowerFlexEnvelope<DocTrakImageMessage> {
   const messageId = typeof crypto.randomUUID === 'function' ? crypto.randomUUID() : `msg-${Date.now()}`
-  const to: Record<string, string> = {}
-
-  if (context.targetApp) {
-    to.APP = context.targetApp
-  }
-  if (context.targetUserId) {
-    to.UserID = context.targetUserId
-  }
-  if (Object.keys(to).length === 0) {
-    to.APP = 'DOCTRAK'
-  }
+  const to = createRoutingTarget(context)
 
   return {
     APP: context.app,
@@ -144,6 +158,32 @@ function createEnvelope(context: UploadUrlContext, image: ProcessedImage): Power
       imageWidth: image.width,
       imageHeight: image.height,
     },
+  }
+}
+
+function createDocTrakTestEnvelope(context: UploadUrlContext): PowerFlexEnvelope<DocTrakMessage> {
+  return {
+    APP: context.app,
+    UserID: context.userId,
+    Configuration: context.configuration,
+    Site: context.site,
+    Context: context.context,
+    FormGUID: context.formGuid,
+    MongooseURL: context.mongooseUrl ?? '',
+    TO: createRoutingTarget(context),
+    MessageType: 'DocTrakMessage',
+    Message: {
+      Module: 'Item',
+      Value1: '30Q',
+    },
+  }
+}
+
+function createRoutingTarget(context: UploadUrlContext): Record<string, string> {
+  return {
+    APP: context.targetApp ?? 'DOCTRAK',
+    UserID: context.targetUserId ?? context.userId,
+    Configuration: context.targetConfiguration ?? context.configuration,
   }
 }
 

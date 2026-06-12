@@ -36,3 +36,22 @@ export interface DocTrakAckMessage {
   code?: string
   detail?: string
 }
+
+export interface DocTrakMessage {
+  APPSESSIONID?: string
+  FormGUID?: string
+  FormCaption?: string
+  Module: string
+  Value1: string
+  Value2?: string
+  Value3?: string
+  Value4?: string
+  Value5?: string
+  Value6?: string
+  ResourceGroup?: string
+  FormEvent?: string
+  FormVariableName?: string
+  FormVariableValue?: string
+  ApplicationVariableName?: string
+  ApplicationVariableValue?: string
+}

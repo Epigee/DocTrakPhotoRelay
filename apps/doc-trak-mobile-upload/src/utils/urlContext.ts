@@ -5,6 +5,7 @@ export interface UploadUrlContext {
   app: string
   targetApp?: string
   targetUserId?: string
+  targetConfiguration?: string
   site?: string
   context?: string
   formGuid?: string
@@ -27,8 +28,8 @@ export function parseUploadUrlContext(sourceUrl?: string): UploadUrlContext {
   const merged = mergeContexts(tokenPayload, queryToContext(url.searchParams))
 
   const wsUrl = getValue(merged, ['wsUrl', 'socketUrl', 'url'])
-  const userId = getValue(merged, ['userId', 'UserID'])
-  const configuration = getValue(merged, ['configuration', 'Configuration'])
+  const userId = getValue(merged, ['userId', 'UserID', 'USERID'])
+  const configuration = getValue(merged, ['configuration', 'Configuration', 'CONFIGURATION'])
 
   if (!wsUrl) {
     throw new Error('Missing required wsUrl query parameter.')
@@ -45,8 +46,9 @@ export function parseUploadUrlContext(sourceUrl?: string): UploadUrlContext {
     userId,
     configuration,
     app: getValue(merged, ['app', 'APP']) ?? DEFAULT_APP,
-    targetApp: getValue(merged, ['targetApp', 'toApp']),
-    targetUserId: getValue(merged, ['targetUserId', 'toUserId']),
+    targetApp: getValue(merged, ['targetApp', 'toApp', 'TOAPP']) ?? undefined,
+    targetUserId: getValue(merged, ['targetUserId', 'toUserId', 'TOUSERID']) ?? undefined,
+    targetConfiguration: getValue(merged, ['targetConfiguration', 'toConfiguration', 'toConfig', 'TOCONFIGURATION']) ?? undefined,
     site: getValue(merged, ['site', 'Site']),
     context: getValue(merged, ['context', 'Context']),
     formGuid: getValue(merged, ['formGuid', 'FormGUID']),
