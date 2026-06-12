@@ -2,6 +2,7 @@ export interface UploadUrlContext {
   wsUrl: string
   userId: string
   configuration: string
+  appSessionId?: string
   app: string
   targetApp?: string
   targetUserId?: string
@@ -45,6 +46,7 @@ export function parseUploadUrlContext(sourceUrl?: string): UploadUrlContext {
     wsUrl,
     userId,
     configuration,
+    appSessionId: getValue(merged, ['appSessionId', 'appsessionid', 'APPSESSIONID']),
     app: getValue(merged, ['app', 'APP']) ?? DEFAULT_APP,
     targetApp: getValue(merged, ['targetApp', 'toApp', 'TOAPP']) ?? undefined,
     targetUserId: getValue(merged, ['targetUserId', 'toUserId', 'TOUSERID']) ?? undefined,

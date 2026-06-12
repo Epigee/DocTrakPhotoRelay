@@ -139,7 +139,7 @@ function createEnvelope(context: UploadUrlContext, image: ProcessedImage): Power
   const to = createRoutingTarget(context)
 
   return {
-    APP: 'DT',
+    APP: context.app,
     UserID: context.userId,
     Configuration: context.configuration,
     Site: context.site,
@@ -163,18 +163,20 @@ function createEnvelope(context: UploadUrlContext, image: ProcessedImage): Power
 
 function createDocTrakTestEnvelope(context: UploadUrlContext): PowerFlexEnvelope<DocTrakMessage> {
   const formGuid = typeof crypto.randomUUID === 'function' ? crypto.randomUUID() : `form-${Date.now()}`
+  const testConfiguration = toDocTrakExampleConfiguration(context.configuration)
 
   return {
-    APP: context.app,
+    APP: 'SL',
     UserID: context.userId,
-    Configuration: context.configuration,
+    Configuration: testConfiguration,
     Site: context.site,
     Context: context.context,
     FormGUID: formGuid,
     MongooseURL: context.mongooseUrl ?? '',
-    TO: createRoutingTarget(context),
+    TO: createTestRoutingTarget(context, testConfiguration),
     MessageType: 'DocTrakMessage',
     Message: {
+      APPSESSIONID: context.appSessionId,
       FormGUID: formGuid,
       Module: 'Item',
       Value1: '30Q',
@@ -188,6 +190,18 @@ function createRoutingTarget(context: UploadUrlContext): Record<string, string> 
     UserID: context.targetUserId ?? context.userId,
     Configuration: context.targetConfiguration ?? context.configuration,
   }
+}
+
+function createTestRoutingTarget(context: UploadUrlContext, configuration: string): Record<string, string> {
+  return {
+    APP: 'DT',
+    UserID: context.targetUserId ?? context.userId,
+    Configuration: context.targetConfiguration ?? configuration,
+  }
+}
+
+function toDocTrakExampleConfiguration(configuration: string): string {
+  return configuration.replace(/_DALS$/i, '_LA')
 }
 
 function redactImagePayload(
