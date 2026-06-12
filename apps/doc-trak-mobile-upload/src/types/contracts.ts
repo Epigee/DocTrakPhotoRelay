@@ -5,11 +5,11 @@ export interface PowerFlexEnvelope<TMessage = unknown> {
   Configuration: string
   APP: string
   Site?: string
-  Context?: string
+  Context?: string | null
   TO: RecipientMap
   MessageType: string
   Message: TMessage
-  MongooseURL?: string
+  MongooseURL?: string | null
   FormGUID?: string
 }
 
@@ -38,9 +38,9 @@ export interface DocTrakAckMessage {
 }
 
 export interface DocTrakMessage {
-  APPSESSIONID?: string
-  FormGUID?: string
-  FormCaption?: string
+  APPSESSIONID?: string | null
+  FormGUID?: string | null
+  FormCaption?: string | null
   Module: string
   Value1: string
   Value2?: string
@@ -48,10 +48,17 @@ export interface DocTrakMessage {
   Value4?: string
   Value5?: string
   Value6?: string
-  ResourceGroup?: string
-  FormEvent?: string
-  FormVariableName?: string
-  FormVariableValue?: string
-  ApplicationVariableName?: string
-  ApplicationVariableValue?: string
+  ResourceGroup?: string | null
+  FormEvent?: string | null
+  FormVariableName?: string | null
+  FormVariableValue?: string | null
+  ApplicationVariableName?: string | null
+  ApplicationVariableValue?: string | null
+  IsFormHeaderModule?: string | null
+  IsReadOnlyForm?: string | null
+  AlwaysShowModuleList?: string | null
+  IsFilterInPlace?: string | null
+  IsCurrentObjectNew?: string | null
+  ForceRefresh?: string | null
+  FormName?: string | null
 }

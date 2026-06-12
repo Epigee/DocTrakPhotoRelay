@@ -164,22 +164,46 @@ function createEnvelope(context: UploadUrlContext, image: ProcessedImage): Power
 function createDocTrakTestEnvelope(context: UploadUrlContext): PowerFlexEnvelope<DocTrakMessage> {
   const formGuid = typeof crypto.randomUUID === 'function' ? crypto.randomUUID() : `form-${Date.now()}`
   const testConfiguration = toDocTrakExampleConfiguration(context.configuration)
+  const appSessionId = context.appSessionId
+
+  if (!appSessionId) {
+    throw new Error('Missing required appSessionId URL parameter for Test message.')
+  }
 
   return {
-    APP: 'SL',
+    APP: 'DTRemoteUpload',
     UserID: context.userId,
     Configuration: testConfiguration,
     Site: context.site,
-    Context: context.context,
+    Context: null,
     FormGUID: formGuid,
-    MongooseURL: context.mongooseUrl ?? '',
-    TO: createTestRoutingTarget(context, testConfiguration),
+    MongooseURL: '',
+    TO: createTestRoutingTarget(context),
     MessageType: 'DocTrakMessage',
     Message: {
-      APPSESSIONID: context.appSessionId,
+      APPSESSIONID: appSessionId,
       FormGUID: formGuid,
+      FormCaption: 'Test Form',
       Module: 'Item',
       Value1: '30Q',
+      Value2: '',
+      Value3: '',
+      Value4: '',
+      Value5: '',
+      Value6: '',
+      ResourceGroup: null,
+      FormEvent: null,
+      FormVariableName: null,
+      FormVariableValue: null,
+      ApplicationVariableName: null,
+      ApplicationVariableValue: null,
+      IsFormHeaderModule: null,
+      IsReadOnlyForm: null,
+      AlwaysShowModuleList: null,
+      IsFilterInPlace: null,
+      IsCurrentObjectNew: null,
+      ForceRefresh: null,
+      FormName: null,
     },
   }
 }
@@ -192,11 +216,10 @@ function createRoutingTarget(context: UploadUrlContext): Record<string, string> 
   }
 }
 
-function createTestRoutingTarget(context: UploadUrlContext, configuration: string): Record<string, string> {
+function createTestRoutingTarget(context: UploadUrlContext): Record<string, string> {
   return {
     APP: 'DT',
     UserID: context.targetUserId ?? context.userId,
-    Configuration: context.targetConfiguration ?? configuration,
   }
 }
 
