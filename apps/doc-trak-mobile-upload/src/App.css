@@ -1,0 +1,64 @@
+.upload-page {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 1rem;
+}
+
+.upload-card {
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+  padding: 1rem;
+}
+
+.upload-card h1 {
+  font-size: 1.25rem;
+  margin: 0 0 0.5rem;
+}
+
+.upload-card p {
+  margin: 0.4rem 0;
+}
+
+.preview {
+  width: 100%;
+  border-radius: 8px;
+  margin: 0.75rem 0;
+}
+
+.actions {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  margin-top: 0.75rem;
+}
+
+.actions button,
+.actions label {
+  border-radius: 10px;
+  border: 1px solid #d0d7de;
+  padding: 0.55rem 0.8rem;
+  font-size: 0.95rem;
+  background: #f6f8fa;
+  cursor: pointer;
+  color: #24292f;
+}
+
+.actions button.primary {
+  background: #2f81f7;
+  color: #ffffff;
+  border-color: #2f81f7;
+}
+
+.actions button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.status-success {
+  color: #1a7f37;
+}
+
+.status-error {
+  color: #cf222e;
+}

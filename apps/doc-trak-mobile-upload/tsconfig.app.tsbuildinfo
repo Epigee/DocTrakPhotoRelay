@@ -1,0 +1,1 @@
+{"root":["./src/app.tsx","./src/main.tsx","./src/vite-env.d.ts","./src/pages/uploadpage.tsx","./src/services/imageprocessor.ts","./src/services/wsclient.ts","./src/types/contracts.ts","./src/utils/urlcontext.ts"],"version":"5.9.3"}
