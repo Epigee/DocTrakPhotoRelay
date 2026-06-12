@@ -139,7 +139,7 @@ function createEnvelope(context: UploadUrlContext, image: ProcessedImage): Power
   const to = createRoutingTarget(context)
 
   return {
-    APP: context.app,
+    APP: 'DT',
     UserID: context.userId,
     Configuration: context.configuration,
     Site: context.site,
