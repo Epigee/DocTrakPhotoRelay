@@ -8,7 +8,6 @@ type ScreenState = 'loading' | 'ready' | 'preview' | 'sending' | 'success' | 'er
 
 export function UploadPage() {
   const uploadFileInputRef = useRef<HTMLInputElement | null>(null)
-  const cameraInputRef = useRef<HTMLInputElement | null>(null)
   const [screen, setScreen] = useState<ScreenState>('loading')
   const [context, setContext] = useState<UploadUrlContext | null>(null)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
@@ -84,11 +83,13 @@ export function UploadPage() {
         {previewDataUrl && <img className="preview" src={previewDataUrl} alt="Upload preview" />}
 
         <div className="actions">
-          <button type="button" onClick={() => uploadFileInputRef.current?.click()} disabled={screen === 'sending'}>
-            Upload File
-          </button>
-          <button type="button" onClick={() => cameraInputRef.current?.click()} disabled={screen === 'sending'}>
-            Take Picture
+          <button
+            type="button"
+            className="upload-trigger"
+            onClick={() => uploadFileInputRef.current?.click()}
+            disabled={screen === 'sending'}
+          >
+            Upload
           </button>
           <button className="primary" onClick={() => void onSend()} disabled={!selectedImage || screen === 'sending'}>
             Send
@@ -98,17 +99,6 @@ export function UploadPage() {
           ref={uploadFileInputRef}
           type="file"
           accept="image/*"
-          hidden
-          onChange={(event) => {
-            void onFileSelected(event.target.files?.[0] ?? null)
-            event.currentTarget.value = ''
-          }}
-        />
-        <input
-          ref={cameraInputRef}
-          type="file"
-          accept="image/*"
-          capture="environment"
           hidden
           onChange={(event) => {
             void onFileSelected(event.target.files?.[0] ?? null)
