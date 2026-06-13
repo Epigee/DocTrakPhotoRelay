@@ -44,9 +44,9 @@ export async function sendEnvelopeWithAlign<TMessage>(
       console.info('[wsClient] WebSocket open succeeded')
       const align: AlignMessage = {
         DIRECTION: 'ALIGN',
-        APP: context.app,
-        UserID: context.userId,
-        CONFIGURATION: context.configuration,
+        APP: envelope.APP,
+        UserID: envelope.UserID,
+        CONFIGURATION: envelope.Configuration,
       }
       console.info('[wsClient] Sending ALIGN message', align)
       socket.send(JSON.stringify(align))
