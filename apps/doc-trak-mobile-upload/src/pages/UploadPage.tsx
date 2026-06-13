@@ -17,17 +17,11 @@ export function UploadPage() {
 
   useEffect(() => {
     try {
-      const params = Object.fromEntries(new URLSearchParams(window.location.search).entries())
-      console.info('[UploadPage] Arrival URL context parameters', {
-        href: window.location.href,
-        params,
-      })
-
       const parsed = parseUploadUrlContext()
-      console.info('[UploadPage] Parsed upload context', parsed)
       setContext(parsed)
       setScreen('ready')
     } catch (error) {
+      console.error('[UploadPage] Failed to parse upload context', error)
       setErrorMessage(error instanceof Error ? error.message : 'Could not parse upload context.')
       setScreen('error')
     }
@@ -44,6 +38,7 @@ export function UploadPage() {
       setPreviewDataUrl(`data:${processed.mimeType};base64,${processed.base64}`)
       setScreen('preview')
     } catch (error) {
+      console.error('[UploadPage] Image processing failed', error)
       setErrorMessage(error instanceof Error ? error.message : 'Unable to process selected image.')
       setScreen('error')
     }
@@ -59,11 +54,12 @@ export function UploadPage() {
 
     try {
       const envelope = createEnvelope(context, selectedImage)
-      console.info('[UploadPage] Envelope to send (image payload redacted)', redactImagePayload(envelope))
+      console.log('[UploadPage] SEND message JSON', JSON.stringify(envelope))
       await sendEnvelopeWithAlign(context, envelope, { waitForResponse: false })
       setSuccessMessage('Message sent')
       setScreen('success')
     } catch (error) {
+      console.error('[UploadPage] SEND failed', error)
       setErrorMessage(error instanceof Error ? error.message : 'Failed to send image.')
       setScreen('error')
     }
@@ -79,11 +75,12 @@ export function UploadPage() {
 
     try {
       const envelope = createDocTrakTestEnvelope(context)
-      console.info('[UploadPage] Test envelope to send', envelope)
+      console.log('[UploadPage] TEST message JSON', JSON.stringify(envelope))
       await sendEnvelopeWithAlign(context, envelope, { waitForResponse: false })
       setSuccessMessage('Message sent')
       setScreen('success')
     } catch (error) {
+      console.error('[UploadPage] TEST failed', error)
       setErrorMessage(error instanceof Error ? error.message : 'Failed to send test message.')
       setScreen('error')
     }
@@ -244,17 +241,4 @@ function createTestRoutingTarget(context: UploadUrlContext): Record<string, stri
 
 function toDocTrakExampleConfiguration(configuration: string): string {
   return configuration.replace(/_DALS$/i, '_LA')
-}
-
-function redactImagePayload(
-  envelope: PowerFlexEnvelope<DocTrakImageMessage>,
-): PowerFlexEnvelope<Omit<DocTrakImageMessage, 'imageBase64'> & { imageBase64: string; imageBase64Length: number }> {
-  return {
-    ...envelope,
-    Message: {
-      ...envelope.Message,
-      imageBase64Length: envelope.Message.imageBase64.length,
-      imageBase64: '[REDACTED]',
-    },
-  }
 }

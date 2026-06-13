@@ -13,7 +13,6 @@ export async function sendEnvelopeWithAlign<TMessage>(
   const waitForResponse = options.waitForResponse ?? true
 
   return new Promise((resolve, reject) => {
-    console.info('[wsClient] Opening WebSocket connection', { wsUrl: context.wsUrl })
     const socket = new WebSocket(context.wsUrl)
     let completed = false
 
@@ -41,16 +40,13 @@ export async function sendEnvelopeWithAlign<TMessage>(
     }
 
     socket.onopen = () => {
-      console.info('[wsClient] WebSocket open succeeded')
       const align: AlignMessage = {
         DIRECTION: 'ALIGN',
         APP: envelope.APP,
         UserID: envelope.UserID,
         CONFIGURATION: envelope.Configuration,
       }
-      console.info('[wsClient] Sending ALIGN message', align)
       socket.send(JSON.stringify(align))
-      console.info('[wsClient] Sending envelope message')
       socket.send(JSON.stringify(envelope))
 
       if (!waitForResponse) {
@@ -70,22 +66,15 @@ export async function sendEnvelopeWithAlign<TMessage>(
 
       try {
         const message = JSON.parse(event.data) as PowerFlexEnvelope<DocTrakAckMessage>
-        console.info('[wsClient] Received WebSocket message', message)
         resolve(message)
       } catch {
-        console.warn('[wsClient] Received non-JSON WebSocket message')
         resolve(null)
       } finally {
         socket.close()
       }
     }
 
-    socket.onclose = (event) => {
-      console.info('[wsClient] WebSocket closed', {
-        code: event.code,
-        reason: event.reason,
-        wasClean: event.wasClean,
-      })
+    socket.onclose = () => {
       if (completed) {
         return
       }
