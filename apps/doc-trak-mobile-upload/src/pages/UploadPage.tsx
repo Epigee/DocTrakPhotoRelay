@@ -86,6 +86,27 @@ export function UploadPage() {
     }
   }
 
+  const onSendWithoutImageData = async () => {
+    if (!context || !selectedImage) {
+      return
+    }
+    setErrorMessage(null)
+    setSuccessMessage(null)
+    setScreen('sending')
+
+    try {
+      const envelope = createEnvelopeWithoutImageData(context, selectedImage)
+      console.log('[UploadPage] SEND (NO IMAGE DATA) message JSON', JSON.stringify(envelope))
+      await sendEnvelopeWithAlign(context, envelope, { waitForResponse: false })
+      setSuccessMessage('Message sent')
+      setScreen('success')
+    } catch (error) {
+      console.error('[UploadPage] SEND (NO IMAGE DATA) failed', error)
+      setErrorMessage(error instanceof Error ? error.message : 'Failed to send image metadata.')
+      setScreen('error')
+    }
+  }
+
   return (
     <main className="upload-page">
       <section className="upload-card">
@@ -109,6 +130,9 @@ export function UploadPage() {
           </button>
           <button className="primary" onClick={() => void onSend()} disabled={!selectedImage || screen === 'sending'}>
             Send
+          </button>
+          <button type="button" onClick={() => void onSendWithoutImageData()} disabled={!selectedImage || screen === 'sending'}>
+            Send (No Image Data)
           </button>
           <button type="button" onClick={() => void onTest()} disabled={screen === 'sending'}>
             Test
@@ -182,6 +206,20 @@ function createEnvelope(context: UploadUrlContext, image: ProcessedImage): Power
       imageWidth: image.width,
       imageHeight: image.height,
     },
+  }
+}
+
+function createEnvelopeWithoutImageData(
+  context: UploadUrlContext,
+  image: ProcessedImage,
+): PowerFlexEnvelope<Omit<DocTrakImageMessage, 'imageBase64'>> {
+  const envelope = createEnvelope(context, image)
+  const { imageBase64, ...messageWithoutImageData } = envelope.Message
+  void imageBase64
+
+  return {
+    ...envelope,
+    Message: messageWithoutImageData,
   }
 }
 
