@@ -133,20 +133,28 @@ export function UploadPage() {
 }
 
 function createEnvelope(context: UploadUrlContext, image: ProcessedImage): PowerFlexEnvelope<DocTrakImageMessage> {
+  const appSessionId = context.appSessionId
+  if (!appSessionId) {
+    throw new Error('Missing required appSessionId URL parameter.')
+  }
+
   const messageId = typeof crypto.randomUUID === 'function' ? crypto.randomUUID() : `msg-${Date.now()}`
-  const to = createRoutingTarget(context)
+  const formGuid = context.formGuid ?? (typeof crypto.randomUUID === 'function' ? crypto.randomUUID() : `form-${Date.now()}`)
+  const normalizedConfiguration = toDocTrakExampleConfiguration(context.configuration)
 
   return {
-    APP: context.app,
+    APP: 'DTRemoteUpload',
     UserID: context.userId,
-    Configuration: context.configuration,
+    Configuration: normalizedConfiguration,
     Site: context.site,
-    Context: context.context,
-    FormGUID: context.formGuid,
-    MongooseURL: context.mongooseUrl ?? '',
-    TO: to,
-    MessageType: context.messageType,
+    Context: null,
+    FormGUID: formGuid,
+    MongooseURL: '',
+    TO: createTestRoutingTarget(context),
+    MessageType: 'DocTrakRemoteUpload',
     Message: {
+      APPSESSIONID: appSessionId,
+      FormGUID: formGuid,
       messageId,
       timestampUtc: new Date().toISOString(),
       fileName: image.fileName,
@@ -203,14 +211,6 @@ function createDocTrakTestEnvelope(context: UploadUrlContext): PowerFlexEnvelope
       ForceRefresh: null,
       FormName: null,
     },
-  }
-}
-
-function createRoutingTarget(context: UploadUrlContext): Record<string, string> {
-  return {
-    APP: context.targetApp ?? 'DOCTRAK',
-    UserID: context.targetUserId ?? context.userId,
-    Configuration: context.targetConfiguration ?? context.configuration,
   }
 }
 
