@@ -60,9 +60,8 @@ export function UploadPage() {
     try {
       const envelope = createEnvelope(context, selectedImage)
       console.info('[UploadPage] Envelope to send (image payload redacted)', redactImagePayload(envelope))
-      const ack = await sendEnvelopeWithAlign(context, envelope)
-      const detail = ack?.Message?.detail
-      setSuccessMessage(detail ?? 'Image sent successfully.')
+      await sendEnvelopeWithAlign(context, envelope, { waitForResponse: false })
+      setSuccessMessage('Message sent')
       setScreen('success')
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : 'Failed to send image.')
@@ -81,9 +80,8 @@ export function UploadPage() {
     try {
       const envelope = createDocTrakTestEnvelope(context)
       console.info('[UploadPage] Test envelope to send', envelope)
-      const ack = await sendEnvelopeWithAlign(context, envelope)
-      const detail = ack?.Message?.detail
-      setSuccessMessage(detail ?? 'Test message sent successfully.')
+      await sendEnvelopeWithAlign(context, envelope, { waitForResponse: false })
+      setSuccessMessage('Message sent')
       setScreen('success')
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : 'Failed to send test message.')
