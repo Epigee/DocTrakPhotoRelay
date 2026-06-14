@@ -65,7 +65,7 @@ The page sends:
 1. ALIGN message
 2. One or more `DocTrakRemoteUpload` envelopes where image data is chunked into multiple payloads.
    - Each SEND payload includes `Message.ChunkID` and `Message.TotalChunks`.
-   - Chunks are sent in order and each serialized message is capped below 12KB.
+   - Chunks are sent in order and each serialized message is capped below 6KB.
    - Reassembly should concatenate `Message.imageBase64` by `ChunkID` order (1..`TotalChunks`) before decoding back to binary.
 
 Success text shown to user: `Message sent`.

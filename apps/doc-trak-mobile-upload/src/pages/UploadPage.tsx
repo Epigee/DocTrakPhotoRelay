@@ -5,7 +5,7 @@ import type { DocTrakImageMessage, DocTrakMessage, PowerFlexEnvelope } from '../
 import { parseUploadUrlContext, type UploadUrlContext } from '../utils/urlContext'
 
 type ScreenState = 'loading' | 'ready' | 'preview' | 'sending' | 'success' | 'error'
-const MAX_SEND_MESSAGE_BYTES = 12 * 1024
+const MAX_SEND_MESSAGE_BYTES = 6 * 1024
 
 export function UploadPage() {
   const uploadFileInputRef = useRef<HTMLInputElement | null>(null)
