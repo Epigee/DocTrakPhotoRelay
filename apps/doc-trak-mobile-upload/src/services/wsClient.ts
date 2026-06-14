@@ -3,6 +3,7 @@ import type { UploadUrlContext } from '../utils/urlContext'
 
 interface SendOptions {
   waitForResponse?: boolean
+  interMessageDelayMs?: number
 }
 
 export async function sendEnvelopesWithAlign<TMessage>(
@@ -15,6 +16,7 @@ export async function sendEnvelopesWithAlign<TMessage>(
   }
 
   const waitForResponse = options.waitForResponse ?? true
+  const interMessageDelayMs = options.interMessageDelayMs ?? 0
 
   return new Promise((resolve, reject) => {
     const socket = new WebSocket(context.wsUrl)
@@ -51,18 +53,34 @@ export async function sendEnvelopesWithAlign<TMessage>(
         UserID: firstEnvelope.UserID,
         CONFIGURATION: firstEnvelope.Configuration,
       }
-      socket.send(JSON.stringify(align))
 
-      for (const envelope of envelopes) {
-        socket.send(JSON.stringify(envelope))
-      }
+      void (async () => {
+        try {
+          socket.send(JSON.stringify(align))
 
-      if (!waitForResponse) {
-        completed = true
-        window.clearTimeout(timeoutHandle)
-        socket.close()
-        resolve(null)
-      }
+          for (const envelope of envelopes) {
+            socket.send(JSON.stringify(envelope))
+            if (interMessageDelayMs > 0) {
+              await delay(interMessageDelayMs)
+            }
+          }
+
+          if (!waitForResponse) {
+            completed = true
+            window.clearTimeout(timeoutHandle)
+            socket.close()
+            resolve(null)
+          }
+        } catch (error) {
+          if (completed) {
+            return
+          }
+          completed = true
+          window.clearTimeout(timeoutHandle)
+          socket.close()
+          reject(error instanceof Error ? error : new Error('WebSocket send failure.'))
+        }
+      })()
     }
 
     socket.onmessage = (event: MessageEvent<string>) => {
@@ -99,4 +117,10 @@ export async function sendEnvelopeWithAlign<TMessage>(
   options: SendOptions = {},
 ): Promise<PowerFlexEnvelope<DocTrakAckMessage> | null> {
   return sendEnvelopesWithAlign(context, [envelope], options)
+}
+
+function delay(durationMs: number): Promise<void> {
+  return new Promise((resolve) => {
+    window.setTimeout(resolve, durationMs)
+  })
 }

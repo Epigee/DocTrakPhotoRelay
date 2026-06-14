@@ -5,7 +5,8 @@ import type { DocTrakImageMessage, DocTrakMessage, PowerFlexEnvelope } from '../
 import { parseUploadUrlContext, type UploadUrlContext } from '../utils/urlContext'
 
 type ScreenState = 'loading' | 'ready' | 'preview' | 'sending' | 'success' | 'error'
-const MAX_IMAGE_BASE64_CHARS_PER_CHUNK = 2880
+const MAX_IMAGE_BASE64_CHARS_PER_CHUNK = 1000
+const SEND_CHUNK_DELAY_MS = 20
 
 export function UploadPage() {
   const uploadFileInputRef = useRef<HTMLInputElement | null>(null)
@@ -58,7 +59,7 @@ export function UploadPage() {
       for (const envelope of envelopes) {
         console.log('[UploadPage] SEND message JSON', JSON.stringify(envelope))
       }
-      await sendEnvelopesWithAlign(context, envelopes, { waitForResponse: false })
+      await sendEnvelopesWithAlign(context, envelopes, { waitForResponse: false, interMessageDelayMs: SEND_CHUNK_DELAY_MS })
       setSuccessMessage('Message sent')
       setScreen('success')
     } catch (error) {
