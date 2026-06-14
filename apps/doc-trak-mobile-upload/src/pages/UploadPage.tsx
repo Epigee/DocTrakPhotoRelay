@@ -5,7 +5,7 @@ import type { DocTrakImageMessage, DocTrakMessage, PowerFlexEnvelope } from '../
 import { parseUploadUrlContext, type UploadUrlContext } from '../utils/urlContext'
 
 type ScreenState = 'loading' | 'ready' | 'preview' | 'sending' | 'success' | 'error'
-const MAX_SEND_MESSAGE_BYTES = 6 * 1024
+const MAX_IMAGE_BASE64_CHARS_PER_CHUNK = 2880
 
 export function UploadPage() {
   const uploadFileInputRef = useRef<HTMLInputElement | null>(null)
@@ -239,7 +239,7 @@ function createChunkedSendEnvelopes(
     throw new Error('Image payload is empty.')
   }
 
-  const chunkSize = calculateChunkSize(baseEnvelope, base64, MAX_SEND_MESSAGE_BYTES)
+  const chunkSize = MAX_IMAGE_BASE64_CHARS_PER_CHUNK
   const totalChunks = Math.ceil(base64.length / chunkSize)
   const envelopes: PowerFlexEnvelope<DocTrakImageMessage>[] = []
 
@@ -258,54 +258,10 @@ function createChunkedSendEnvelopes(
       },
     }
 
-    const serialized = JSON.stringify(envelope)
-    const serializedBytes = getUtf8Bytes(serialized)
-    if (serializedBytes > MAX_SEND_MESSAGE_BYTES) {
-      throw new Error(`Chunk ${chunkId} exceeds ${MAX_SEND_MESSAGE_BYTES} bytes.`)
-    }
-
     envelopes.push(envelope)
   }
 
   return envelopes
-}
-
-function calculateChunkSize(
-  baseEnvelope: PowerFlexEnvelope<DocTrakImageMessage>,
-  base64: string,
-  maxMessageBytes: number,
-): number {
-  let totalChunks = 1
-  let chunkSize = 0
-
-  for (let i = 0; i < 10; i += 1) {
-    const probeEnvelope: PowerFlexEnvelope<DocTrakImageMessage> = {
-      ...baseEnvelope,
-      Message: {
-        ...baseEnvelope.Message,
-        imageBase64: '',
-        ChunkID: totalChunks,
-        TotalChunks: totalChunks,
-      },
-    }
-    const overheadBytes = getUtf8Bytes(JSON.stringify(probeEnvelope))
-    chunkSize = maxMessageBytes - overheadBytes
-    if (chunkSize <= 0) {
-      throw new Error(`Message overhead exceeds ${maxMessageBytes} bytes; unable to chunk image payload.`)
-    }
-
-    const recalculatedTotal = Math.ceil(base64.length / chunkSize)
-    if (recalculatedTotal === totalChunks) {
-      return chunkSize
-    }
-    totalChunks = recalculatedTotal
-  }
-
-  return chunkSize
-}
-
-function getUtf8Bytes(value: string): number {
-  return new TextEncoder().encode(value).length
 }
 
 function createDocTrakTestEnvelope(context: UploadUrlContext): PowerFlexEnvelope<DocTrakMessage> {
