@@ -49,6 +49,8 @@ export interface DocTrakImageMessage {
   fileName: string
   mimeType: string
   imageBase64: string
+  ChunkID?: number
+  TotalChunks?: number
   imageBytes: number
   imageWidth: number
   imageHeight: number

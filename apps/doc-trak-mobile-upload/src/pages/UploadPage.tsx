@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
 import { processImageFile, type ProcessedImage } from '../services/imageProcessor'
-import { sendEnvelopeWithAlign } from '../services/wsClient'
+import { sendEnvelopeWithAlign, sendEnvelopesWithAlign } from '../services/wsClient'
 import type { DocTrakImageMessage, DocTrakMessage, PowerFlexEnvelope } from '../types/contracts'
 import { parseUploadUrlContext, type UploadUrlContext } from '../utils/urlContext'
 
 type ScreenState = 'loading' | 'ready' | 'preview' | 'sending' | 'success' | 'error'
+const MAX_SEND_MESSAGE_BYTES = 60 * 1024
 
 export function UploadPage() {
   const uploadFileInputRef = useRef<HTMLInputElement | null>(null)
@@ -53,9 +54,11 @@ export function UploadPage() {
     setScreen('sending')
 
     try {
-      const envelope = createEnvelope(context, selectedImage)
-      console.log('[UploadPage] SEND message JSON', JSON.stringify(envelope))
-      await sendEnvelopeWithAlign(context, envelope, { waitForResponse: false })
+      const envelopes = createChunkedSendEnvelopes(context, selectedImage)
+      for (const envelope of envelopes) {
+        console.log('[UploadPage] SEND message JSON', JSON.stringify(envelope))
+      }
+      await sendEnvelopesWithAlign(context, envelopes, { waitForResponse: false })
       setSuccessMessage('Message sent')
       setScreen('success')
     } catch (error) {
@@ -201,7 +204,7 @@ function createEnvelope(context: UploadUrlContext, image: ProcessedImage): Power
       timestampUtc: new Date().toISOString(),
       fileName: image.fileName,
       mimeType: image.mimeType,
-      imageBase64: image.base64,
+      imageBase64: '',
       imageBytes: image.bytes,
       imageWidth: image.width,
       imageHeight: image.height,
@@ -214,13 +217,95 @@ function createEnvelopeWithoutImageData(
   image: ProcessedImage,
 ): PowerFlexEnvelope<Omit<DocTrakImageMessage, 'imageBase64'>> {
   const envelope = createEnvelope(context, image)
-  const { imageBase64, ...messageWithoutImageData } = envelope.Message
+  const { imageBase64, ChunkID, TotalChunks, ...messageWithoutImageData } = envelope.Message
   void imageBase64
+  void ChunkID
+  void TotalChunks
 
   return {
     ...envelope,
     Message: messageWithoutImageData,
   }
+}
+
+function createChunkedSendEnvelopes(
+  context: UploadUrlContext,
+  image: ProcessedImage,
+): PowerFlexEnvelope<DocTrakImageMessage>[] {
+  const baseEnvelope = createEnvelope(context, image)
+  const base64 = image.base64
+
+  if (!base64) {
+    throw new Error('Image payload is empty.')
+  }
+
+  const chunkSize = calculateChunkSize(baseEnvelope, base64, MAX_SEND_MESSAGE_BYTES)
+  const totalChunks = Math.ceil(base64.length / chunkSize)
+  const envelopes: PowerFlexEnvelope<DocTrakImageMessage>[] = []
+
+  for (let index = 0; index < totalChunks; index += 1) {
+    const chunkId = index + 1
+    const start = index * chunkSize
+    const end = Math.min(base64.length, start + chunkSize)
+    const chunkBase64 = base64.slice(start, end)
+    const envelope: PowerFlexEnvelope<DocTrakImageMessage> = {
+      ...baseEnvelope,
+      Message: {
+        ...baseEnvelope.Message,
+        imageBase64: chunkBase64,
+        ChunkID: chunkId,
+        TotalChunks: totalChunks,
+      },
+    }
+
+    const serialized = JSON.stringify(envelope)
+    const serializedBytes = getUtf8Bytes(serialized)
+    if (serializedBytes > MAX_SEND_MESSAGE_BYTES) {
+      throw new Error(`Chunk ${chunkId} exceeds ${MAX_SEND_MESSAGE_BYTES} bytes.`)
+    }
+
+    envelopes.push(envelope)
+  }
+
+  return envelopes
+}
+
+function calculateChunkSize(
+  baseEnvelope: PowerFlexEnvelope<DocTrakImageMessage>,
+  base64: string,
+  maxMessageBytes: number,
+): number {
+  let totalChunks = 1
+  let chunkSize = 0
+
+  for (let i = 0; i < 10; i += 1) {
+    const probeEnvelope: PowerFlexEnvelope<DocTrakImageMessage> = {
+      ...baseEnvelope,
+      Message: {
+        ...baseEnvelope.Message,
+        imageBase64: '',
+        ChunkID: totalChunks,
+        TotalChunks: totalChunks,
+      },
+    }
+    const overheadBytes = getUtf8Bytes(JSON.stringify(probeEnvelope))
+    chunkSize = maxMessageBytes - overheadBytes
+    if (chunkSize <= 0) {
+      throw new Error(`Message overhead exceeds ${maxMessageBytes} bytes; unable to chunk image payload.`)
+    }
+
+    const recalculatedTotal = Math.ceil(base64.length / chunkSize)
+    if (recalculatedTotal === totalChunks) {
+      return chunkSize
+    }
+    totalChunks = recalculatedTotal
+  }
+
+  return chunkSize
+}
+
+function getUtf8Bytes(value: string): number {
+  return new TextEncoder().encode(value).length
 }
 
 function createDocTrakTestEnvelope(context: UploadUrlContext): PowerFlexEnvelope<DocTrakMessage> {

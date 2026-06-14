@@ -5,11 +5,15 @@ interface SendOptions {
   waitForResponse?: boolean
 }
 
-export async function sendEnvelopeWithAlign<TMessage>(
+export async function sendEnvelopesWithAlign<TMessage>(
   context: UploadUrlContext,
-  envelope: PowerFlexEnvelope<TMessage>,
+  envelopes: PowerFlexEnvelope<TMessage>[],
   options: SendOptions = {},
 ): Promise<PowerFlexEnvelope<DocTrakAckMessage> | null> {
+  if (envelopes.length === 0) {
+    return null
+  }
+
   const waitForResponse = options.waitForResponse ?? true
 
   return new Promise((resolve, reject) => {
@@ -40,14 +44,18 @@ export async function sendEnvelopeWithAlign<TMessage>(
     }
 
     socket.onopen = () => {
+      const firstEnvelope = envelopes[0]
       const align: AlignMessage = {
         DIRECTION: 'ALIGN',
-        APP: envelope.APP,
-        UserID: envelope.UserID,
-        CONFIGURATION: envelope.Configuration,
+        APP: firstEnvelope.APP,
+        UserID: firstEnvelope.UserID,
+        CONFIGURATION: firstEnvelope.Configuration,
       }
       socket.send(JSON.stringify(align))
-      socket.send(JSON.stringify(envelope))
+
+      for (const envelope of envelopes) {
+        socket.send(JSON.stringify(envelope))
+      }
 
       if (!waitForResponse) {
         completed = true
@@ -83,4 +91,12 @@ export async function sendEnvelopeWithAlign<TMessage>(
       resolve(null)
     }
   })
+}
+
+export async function sendEnvelopeWithAlign<TMessage>(
+  context: UploadUrlContext,
+  envelope: PowerFlexEnvelope<TMessage>,
+  options: SendOptions = {},
+): Promise<PowerFlexEnvelope<DocTrakAckMessage> | null> {
+  return sendEnvelopesWithAlign(context, [envelope], options)
 }

@@ -46,10 +46,10 @@ If any required parameter is missing, the page enters an error state.
    - Normal upload message type.
    - Default: `DocTrakMobileImageUpload`
 10. `ackTimeoutMs`
-   - Timeout used only when wait-for-response mode is enabled.
-   - Current app behavior is fire-and-forget for Send/Test.
+    - Timeout used only when wait-for-response mode is enabled.
+    - Current app behavior is fire-and-forget for Send/Test.
 11. `appSessionId` / `appsessionid` / `APPSESSIONID`
-   - Required for Test button payload as `Message.APPSESSIONID`.
+    - Required for Test button payload as `Message.APPSESSIONID`.
 
 ## URL Token Option
 
@@ -63,7 +63,10 @@ You can also pass a base64url-encoded JSON object in `ctx`.
 
 The page sends:
 1. ALIGN message
-2. Image envelope payload (`MessageType` from `messageType` param/default)
+2. One or more `DocTrakRemoteUpload` envelopes where image data is chunked into multiple payloads.
+   - Each SEND payload includes `Message.ChunkID` and `Message.TotalChunks`.
+   - Chunks are sent in order and each serialized message is capped below 60KB.
+   - Reassembly should concatenate `Message.imageBase64` by `ChunkID` order (1..`TotalChunks`) before decoding back to binary.
 
 Success text shown to user: `Message sent`.
 
